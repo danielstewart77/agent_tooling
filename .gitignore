@@ -1,0 +1,45 @@
+#Python-specific ignores
+pycache/
+*.py[cod]
+*$py.class
+#Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+#Virtual environments
+venv/
+env/
+.env/
+.venv/
+ENV/
+#IDE-specific files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+#Operating System files
+.DS_Store
+Thumbs.db
+#Pytest and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+#Jupyter Notebook
+.ipynb_checkpoints
+#Logs
+*.log
+#Local development settings
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+Mypy cache
+.mypy_cache/
+#Temporary files
+*.swp
+*~
+#Build and release artifacts
+*.tar.gz
+*.whl
