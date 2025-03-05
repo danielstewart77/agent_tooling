@@ -5,7 +5,7 @@ A lightweight Python package for registering and managing function metadata.
 ## Installation
 
 ```bash
-pip install agent-tooling
+pip install agent_tooling
 ```
 
 ## Usage

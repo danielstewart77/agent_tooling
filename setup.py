@@ -1,14 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='agent-tooling',
+    name='agent_tooling',
     version='0.1.0',
     author='Your Name',
     author_email='daniel.stewart77@gmail.com',
     description='A lightweight tool registry for function metadata management',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/danielstewart77/agent-tooling',
+    url='https://github.com/danielstewart77/agent_tooling',
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
     classifiers=[
@@ -35,7 +35,7 @@ setup(
         ],
     },
     project_urls={
-        'Bug Reports': 'https://github.com/danielstewart77/agent-tooling/issues',
-        'Source': 'https://github.com/danielstewart77/agent-tooling',
+        'Bug Reports': 'https://github.com/danielstewart77/agent_tooling/issues',
+        'Source': 'https://github.com/danielstewart77/agent_tooling',
     },
 )

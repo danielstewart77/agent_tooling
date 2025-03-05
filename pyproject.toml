@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-tooling"
+name = "agent_tooling"
 version = "0.1.0"
 description = "A lightweight tool registry for function metadata management"
 readme = "README.md"
@@ -26,9 +26,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/danielstewart77/agent-tooling"
-Repository = "https://github.com/danielstewart77/agent-tooling"
-"Bug Tracker" = "https://github.com/danielstewart77/agent-tooling/issues"
+Homepage = "https://github.com/danielstewart77/agent_tooling"
+Repository = "https://github.com/danielstewart77/agent_tooling"
+"Bug Tracker" = "https://github.com/danielstewart77/agent_tooling/issues"
 
 [project.optional-dependencies]
 dev = [
