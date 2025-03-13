@@ -2,8 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name='agent_tooling',
-    version='0.1.0',
-    author='Your Name',
+    version='0.2.0',
+    author='Daniel Stewart',
     author_email='daniel.stewart77@gmail.com',
     description='A lightweight tool registry for function metadata management',
     long_description=open('README.md').read(),
