@@ -3,7 +3,7 @@ from functools import wraps
 import warnings
 
 class ToolRegistry:
-    """Manages function metadata registration."""
+    """Manages function metadata and references registration."""
 
     def __init__(self):
         self.tool_schemas = {}
@@ -30,6 +30,9 @@ class ToolRegistry:
             },
             "return_type": return_type
         }
+        
+        # Store the actual function reference
+        self.tool_functions[func.__name__] = func
 
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -71,5 +74,9 @@ class ToolRegistry:
 
 # Create a singleton instance
 tool_registry = ToolRegistry()
-tool = tool_registry.tool  # Expose decorator
-get_registered_tools = tool_registry.get_registered_tools  # Expose function
+
+# Expose functions
+tool = tool_registry.tool
+get_tool_schemas = tool_registry.get_tool_schemas
+get_tool_function = tool_registry.get_tool_function
+get_registered_tools = tool_registry.get_registered_tools  # For backward compatibility
