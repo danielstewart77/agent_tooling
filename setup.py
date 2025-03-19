@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='agent_tooling',
-    version='0.2.1',
+    version='0.2.5',
     author='Daniel Stewart',
     author_email='daniel.stewart77@gmail.com',
     description='A lightweight tool registry for function metadata management',
@@ -20,6 +20,8 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     python_requires='>=3.8',
