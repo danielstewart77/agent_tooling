@@ -78,11 +78,16 @@ class OpenAITooling:
                 
                 # Tool functions now return standardized responses
                 result = function_to_call(**args)
-                messages.append({
-                    "role": "function",
-                    "tool_call_id": tool_call.id,
-                    "name": name,
-                    "content": result
-                })
+
+                if isinstance(result, Generator):
+                    for item in result:
+                        yield item
+                else:
+                    messages.append({
+                        "role": "function",
+                        "tool_call_id": tool_call.id,
+                        "name": name,
+                        "content": result
+                    })
 
         return messages
