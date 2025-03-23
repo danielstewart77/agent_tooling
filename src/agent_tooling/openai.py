@@ -1,7 +1,7 @@
 import json
 from openai import OpenAI
 from .tool import get_tool_schemas, get_tool_function
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Generator
 
 def get_tools() -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     """OpenAI tool schema wrapper"""
