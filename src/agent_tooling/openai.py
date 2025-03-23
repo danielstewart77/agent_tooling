@@ -1,7 +1,7 @@
 import json
 from openai import OpenAI
 from .tool import get_tool_schemas, get_tool_function
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Generator
 
 def get_tools() -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     """OpenAI tool schema wrapper"""
@@ -78,11 +78,21 @@ class OpenAITooling:
                 
                 # Tool functions now return standardized responses
                 result = function_to_call(**args)
-                messages.append({
-                    "role": "function",
-                    "tool_call_id": tool_call.id,
-                    "name": name,
-                    "content": result
-                })
+
+                if isinstance(result, Generator):
+                    for item in result:
+                        messages.append({
+                            "role": "function",
+                            "tool_call_id": tool_call.id,
+                            "name": name,
+                            "content": item
+                        })
+                else:
+                    messages.append({
+                        "role": "function",
+                        "tool_call_id": tool_call.id,
+                        "name": name,
+                        "content": result
+                    })
 
         return messages
