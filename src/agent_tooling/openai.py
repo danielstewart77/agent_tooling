@@ -3,7 +3,7 @@ from openai import OpenAI
 from .tool import get_tool_schemas, get_tool_function
 from typing import Any, Dict, List, Tuple, Generator
 
-def get_tools() -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+def get_tools(tags: list[str] = None) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     """OpenAI tool schema wrapper"""
     functions = get_tool_schemas()
 
@@ -41,7 +41,8 @@ class OpenAITooling:
             messages: list[dict[str, str]], 
             api_key: str = None, 
             model: str = None,
-            tool_choice: str = "auto") -> dict:
+            tool_choice: str = "auto",
+            tags: list[str] = None) -> list[dict[str,str]] | Generator[str, None, None]:
         """Handles OpenAI API tool calls."""
 
         if not api_key:
@@ -49,16 +50,11 @@ class OpenAITooling:
         if not model:
             model = self.model
 
-        messages.append({
-            "role": "system",
-            "content": f'''Choose one or multiple tools that would be useful for solving the task.'''
-        })
-
         """Interprets a user query and returns a standardized response dict."""
 
         client = OpenAI(api_key=api_key)
 
-        tools, available_functions = get_tools()
+        tools, available_functions = get_tools(tags=tags)
         messages = messages
 
         completion = client.chat.completions.create(
@@ -75,9 +71,13 @@ class OpenAITooling:
                 name = tool_call.function.name
                 args = json.loads(tool_call.function.arguments)
                 function_to_call = available_functions[name]
+
+                # if there is an argument called messages, remove it from the args
+                if "messages" in args:
+                    del args["messages"]
                 
                 # Tool functions now return standardized responses
-                result = function_to_call(**args)
+                result = function_to_call(**args, messages=messages)
 
                 if isinstance(result, Generator):
                     for item in result:
@@ -89,5 +89,6 @@ class OpenAITooling:
                         "name": name,
                         "content": result
                     })
+                    return messages
 
-        return messages
+        
