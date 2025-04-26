@@ -1,4 +1,9 @@
 # Agent Tooling
+
+[![PyPI version](https://img.shields.io/pypi/v/agent_tooling.svg)](https://pypi.org/project/agent_tooling/)
+[![License](https://img.shields.io/github/license/danielstewart77/agent_tooling.svg)](LICENSE)
+[![Python Versions](https://img.shields.io/pypi/pyversions/agent_tooling.svg)](https://pypi.org/project/agent_tooling/)
+
 A lightweight Python package for registering and managing function metadata and references, with built-in OpenAI integration.
 
 ## Installation
@@ -37,7 +42,8 @@ result = func(5, 3)  # Returns 8
         },
         'required': ['a', 'b']
     },
-    'return_type': 'integer'
+    'return_type': 'integer',
+    'tags': []
 }]
 ```
 
@@ -48,12 +54,24 @@ result = func(5, 3)  # Returns 8
 - JSON-schema compatible parameter definitions
 - Function reference storage and retrieval
 - Built-in OpenAI integration
+- **New:** Tagging support for tool registration and selection
+  
+- **New:** Filter tools by tags during OpenAI tool usage
 - Compatible with AI tools frameworks
 
 ## API Reference
 
-### `@tool`
-Decorator to register a function as a tool, capturing its metadata and storing its reference.
+### `@tool(tags: list[str] = None)`
+
+Decorator to register a function as a tool, with optional tags for organizing and filtering tools.
+
+Example:
+
+```python
+@tool(tags=["workflow"]) 
+def create_agent_workflow(workflow_id: Optional[str] = None) -> Generator[str, None, None]:
+     """Creates a new agent workflow."""
+```
 
 ### `get_tool_schemas()`
 Returns a list of metadata schemas for all registered tools.
@@ -61,8 +79,6 @@ Returns a list of metadata schemas for all registered tools.
 ### `get_tool_function(name)`
 Returns the function reference for a registered tool by name.
 
-### `get_registered_tools()` (Deprecated)
-Alias for `get_tool_schemas()` maintained for backward compatibility. Will be removed in a future version.
 
 ### `OpenAITooling`
 A class that simplifies integration with OpenAI's API for tool use.
@@ -73,47 +89,57 @@ OpenAITooling(api_key: str = None, model: str = None, tool_choice: str = "auto")
 ```
 
 #### Methods
-- `call_tools(messages: list[dict[str, str]], api_key: str = None, model: str = None, tool_choice: str = "auto") -> dict`
-  Handles OpenAI API tool calls and returns updated messages with tool results.
+```python
+call_tools(
+    messages: list[dict[str, str]], 
+    api_key: str = None, 
+    model: str = None, 
+    tool_choice: str = "auto", 
+    tags: list[str] = None) -> list[dict[str,str]] | Generator
+```
 
-### `get_tools()`
+  Handles OpenAI API tool calls and returns updated messages with tool results.
+  Optionally limits available tools by tags
+
+### - `get_tools()`
 Returns a tuple containing OpenAI-compatible tool schemas and available function references.
 
 ## Example with OpenAITooling Integration
 
 ```python
-from agent_tooling import tool, OpenAITooling
-import os
+from agent_tooling import tool, OpenAITooling 
+import os # Define your tools 
 
-# Define your tools
-@tool
-def get_weather(location: str, unit: str = "celsius") -> str:
-    """Get the current weather for a location."""
-    # Implementation omitted
-    return f"The weather in {location} is sunny and 25°{unit[0].upper()}"
+@tool(tags=["weather"]) 
+def get_weather(location: str, unit: str = "celsius") -> str: 
+    """Get the current weather for a location.""" 
+    return f"The weather in {location} is sunny and 25°{unit[0].upper()}" 
+    
+@tool(tags=["finance"]) 
+def calculate_mortgage(principal: float, interest_rate: float, years: int) -> str: 
+    """Calculate monthly mortgage payment.""" 
+    monthly_payment = (principal * (interest_rate/12) * (1 + interest_rate/12)**(years*12)) / ((1 + interest_rate/12)**(years*12) - 1) 
+    
+    return f"Monthly payment: ${monthly_payment:.2f}" 
+    
+# Initialize the OpenAI tooling 
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY") 
+openai = OpenAITooling(api_key=OPENAI_API_KEY, model="gpt-4o") 
 
-@tool
-def calculate_mortgage(principal: float, interest_rate: float, years: int) -> str:
-    """Calculate monthly mortgage payment."""
-    # Implementation omitted
-    monthly_payment = (principal * (interest_rate/12) * (1 + interest_rate/12)**(years*12)) / ((1 + interest_rate/12)**(years*12) - 1)
-    return f"Monthly payment: ${monthly_payment:.2f}"
+# Create a conversation 
+messages = [ 
+    {
+        "role": "user", 
+        "content": "What's the weather in Paris and calculate my mortgage for $300,000 at 4.5% interest for 30 years."
+    } 
+] 
 
-# Initialize the OpenAI tooling
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-openai = OpenAITooling(api_key=OPENAI_API_KEY, model="gpt-4o")
+# Process the request with tools 
+messages = openai.call_tools(messages=messages, tags=["weather", "finance"]) 
 
-# Create a conversation
-messages = [
-    {"role": "user", "content": "What's the weather in Paris and how much would a $300,000 mortgage cost at 4.5% interest for 30 years?"}
-]
-
-# Process the request with tools
-messages = openai.call_tools(messages=messages)
-
-# Display the final response
-for message in messages:
-    if message["role"] == "function":
+# Display the final response 
+for message in messages: 
+    if message["role"] == "function": 
         print(f"Tool {message['name']} returned: {message['content']}")
 ```
 
@@ -126,19 +152,18 @@ from agent_tooling import tool, get_tool_schemas, get_tool_function
 from openai import OpenAI
 import json
 
-@tool
+@tool(tags=["weather"])
 def get_weather(location: str, unit: str = "celsius") -> str:
     """Get the current weather for a location."""
-    # Implementation omitted
     return f"The weather in {location} is sunny and 25°{unit[0].upper()}"
 
-# Get tool schemas for AI model
-tools = get_tool_schemas()
+# Get all tool schemas
+tools = get_tool_schemas(tags=["weather"])
 
-# Create AI client
+# Create OpenAI client
 client = OpenAI()
 
-# Send request to AI with tools
+# Send request with filtered tools
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=[{"role": "user", "content": "What's the weather in Paris?"}],
@@ -146,14 +171,13 @@ response = client.chat.completions.create(
     tool_choice="auto",
 )
 
-# Process tool calls
+# Handle tool calls manually
 if response.choices[0].message.tool_calls:
     for tool_call in response.choices[0].message.tool_calls:
         name = tool_call.function.name
         args = json.loads(tool_call.function.arguments)
         
-        # Get and call the function
         function_to_call = get_tool_function(name)
         result = function_to_call(**args)
-        print(result)  # "The weather in Paris is sunny and 25°C"
+        print(result)
 ```
