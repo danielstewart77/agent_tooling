@@ -1,5 +1,18 @@
 import inspect
+import os
+import warnings
+from pydantic import BaseModel, Field
 from functools import wraps
+
+class Agent(BaseModel):
+    name: str = Field(..., description="name of the agent")
+    description: str = Field(..., description="description of what the agent does")
+    file_name: str = Field(..., description="the name of the file without the full path")
+    file_path: str = Field(..., description="the name of the file including the full path")
+    code: str = Field(..., description="the all of the code in the file for the agent")
+
+    class ConfigDict:
+        extra = "forbid"
 
 class ToolRegistry:
     """Manages function metadata and references registration."""
@@ -7,10 +20,16 @@ class ToolRegistry:
     def __init__(self):
         self.tool_schemas = {}
         self.tool_functions = {}
+        self.agents = {}
 
     def tool(self, tags=None):
         """Decorator factory to register a function as a tool with optional tags."""
+        if callable(tags):
+            func = tags
+            tags = None
+            return self.tool(tags)(func)
         def decorator(func):
+            print(f"[REGISTER] from {__name__}: {func.__name__}")
             sig = inspect.signature(func)
 
             param_details = {
@@ -30,6 +49,22 @@ class ToolRegistry:
                 },
                 "return_type": return_type,
                 "tags": tags or []
+            }
+
+            frame = inspect.currentframe().f_back
+            file_path = frame.f_code.co_filename
+            file_name = os.path.basename(file_path)
+
+            # Read the entire content of the file where the function is defined
+            with open(file_path, 'r') as file:
+                code = file.read()
+
+            self.agents[func.__name__] = {
+                "name": func.__name__,
+                "description": func.__doc__ or "No description provided.",
+                "file_name": file_name,
+                "file_path": file_path,
+                "code": code,
             }
 
             # Store the actual function reference
@@ -65,6 +100,16 @@ class ToolRegistry:
             dict: "object",
         }
         return type_mapping.get(python_type, "string")  # Default to string if unknown
+    
+    def get_agents(self):
+        """Returns a list of Agent instances for all registered agents."""
+        return [Agent(**data) for data in self.agents.values()]
+    
+    def clear(self):
+        """Clears all registered tools and agents."""
+        self.tool_schemas.clear()
+        self.tool_functions.clear()
+        self.agents.clear()
 
 
 # Create a singleton instance
@@ -74,3 +119,4 @@ tool_registry = ToolRegistry()
 tool = tool_registry.tool
 get_tool_schemas = tool_registry.get_tool_schemas
 get_tool_function = tool_registry.get_tool_function
+get_agents = tool_registry.get_agents

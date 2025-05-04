@@ -1,10 +1,14 @@
-from .tool import tool, get_registered_tools, get_tool_schemas, get_tool_function, get_agents, Agent
-from .openai import OpenAITooling
+from .tool import tool, get_tool_schemas, get_tool_function, get_agents, Agent
+from .openai_client import OpenAITooling
+from .tool_discovery import discover_tools
 __all__ = [
-    'ToolRegistry', 
     'tool', 
     'get_tool_schemas', 
     'get_tool_function',
     'OpenAITooling',
     'get_agents',
-    'Agent']
+    'Agent',
+    'discover_tools',
+]
+
+discover_tools()
