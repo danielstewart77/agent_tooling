@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/github/license/danielstewart77/agent_tooling.svg)](LICENSE)
 [![Python Versions](https://img.shields.io/pypi/pyversions/agent_tooling.svg)](https://pypi.org/project/agent_tooling/)
 
-A lightweight Python package for registering, discovering, and managing function metadata for OpenAI agents. Includes support for tagging, streaming, auto-discovery, and tool schema generation.
+A lightweight Python package for registering, discovering, and managing function metadata for OpenAI agents. Includes support for tagging, fallback tools, structured schema validation, and streaming.
 
 ---
 
@@ -20,7 +20,10 @@ pip install agent_tooling
 * ✅ Auto-discover tools across packages with `discover_tools()`
 * ✅ Generate OpenAI-compatible tool schemas
 * ✅ Call tools with OpenAI's API using `OpenAITooling`
-* ✅ Supports streaming (SSE-style) and non-streaming responses
+* ✅ Supports fallback tools and graceful degradation
+* ✅ Validates function arguments against schema
+* ✅ Smart message passing based on function signature
+* ✅ Stream results or return all at once
 * ✅ Expose registered agents and their code metadata
 
 ---
@@ -36,8 +39,8 @@ def add(a: int, b: int) -> int:
     return a + b
 
 schemas = get_tool_schemas()
-func = get_tool_function("add")
-print(func(5, 3))  # 8
+func_dict = get_tool_function("add")
+print(func_dict("a": 5, "b": 3))  # 8
 ```
 
 ---
@@ -51,7 +54,7 @@ import os
 @tool(tags=["weather"])
 def get_weather(location: str, unit: str = "celsius") -> str:
     """Returns mock weather for a location."""
-    return f"The weather in {location} is sunny and 25\u00b0{unit[0].upper()}"
+    return f"The weather in {location} is sunny and 25°{unit[0].upper()}"
 
 @tool(tags=["finance"])
 def calculate_mortgage(principal: float, interest_rate: float, years: int) -> str:
@@ -71,27 +74,55 @@ for message in messages:
 
 ---
 
+## Fallback Tool Example
+
+```python
+result_stream = openai.call_tools(
+    messages=messages,
+    api_key=os.getenv("OPENAI_API_KEY"),
+    model="gpt-4.1",
+    tool_choice="auto",
+    tags=["triage"],
+    fallback_tool="web_search",
+)
+
+for response in result_stream:
+    print(response["content"])
+```
+
+If the tools matching the provided tags cannot handle the message, the fallback tool will be automatically invoked.
+
+---
+
 ## API Reference
 
 ### `@tool(tags=None)`
 
 Registers a function with introspected JSON schema + optional tags.
 
-### `get_tool_schemas(tags=None)`
+### `get_tool_schemas(tags=None) -> List[Dict[str, Any]]`
 
 Returns OpenAI-compatible tool metadata (filtered by tag if provided).
 
-### `get_tool_function(name)`
+### `get_tool_function(name) -> Optional[Callable]`
 
 Returns function reference by name.
 
-### `get_agents()`
+### `get_tool(name) -> Tuple[List[Dict[str, Any]], Dict[str, Callable]]`
+
+Returns both the tool schema and function reference. Useful for fallback execution.
+
+### `get_agents() -> List[Agent]`
 
 Returns metadata + source code for each registered tool.
 
 ### `discover_tools(folders: list[str])`
 
 Recursively imports all modules in specified package folders, auto-registering tools.
+
+### `clear()`
+
+Clears all registered tools and metadata.
 
 ---
 
@@ -105,8 +136,11 @@ OpenAITooling(api_key=None, model=None, tool_choice="auto")
 
 #### Methods:
 
-* `call_tools(messages, api_key=None, model=None, tool_choice="auto", tags=None)`
-* `stream_tools(messages, api_key=None, model=None, tool_choice="auto", tags=None)`
+* `call_tools(messages, api_key=None, model=None, tool_choice="auto", tags=None, fallback_tool=None)`
+
+  * Yields generator of response messages
+  * If no tool matched, attempts a fallback if provided
+  * Validates arguments and handles conditional message passing
 
 ---
 
@@ -121,7 +155,7 @@ import json
 def get_weather(location: str) -> str:
     return f"Weather in {location}: 25°C"
 
-tools, _ = get_tool_schemas(tags=["weather"]), get_tool_function
+tools, _ = get_tool("get_weather")
 client = OpenAI()
 response = client.chat.completions.create(
     model="gpt-4o",
@@ -133,7 +167,8 @@ response = client.chat.completions.create(
 for call in response.choices[0].message.tool_calls:
     name = call.function.name
     args = json.loads(call.function.arguments)
-    func = get_tool_function(name)
+    _, funcs = get_tool(name)
+    func = funcs[name]
     print(func(**args))
 ```
 

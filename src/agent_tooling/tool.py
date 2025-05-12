@@ -1,5 +1,6 @@
 import inspect
 import os
+from typing import Any, Callable, Dict, List, Optional, Tuple
 import warnings
 from pydantic import BaseModel, Field
 from functools import wraps
@@ -78,18 +79,18 @@ class ToolRegistry:
         
         return decorator
 
-    def get_tool_schemas(self, tags=None):
+    def get_tool_schemas(self, tags=None) -> List[Dict[str, Any]]:
         """Returns metadata schemas for registered tools, optionally filtered by tags."""
         schemas = list(self.tool_schemas.values())
         if tags is None:
             return schemas
         return [schema for schema in schemas if any(tag in schema.get("tags", []) for tag in tags)]
 
-    def get_tool_function(self, name):
+    def get_tool_function(self, name) -> Optional[Dict[str, Callable]]:
         """Returns the function reference by name."""
         return self.tool_functions.get(name)
 
-    def _get_json_type(self, python_type):
+    def _get_json_type(self, python_type) -> str:
         """Converts Python type annotations to JSON Schema types."""
         type_mapping = {
             int: "integer",
@@ -100,10 +101,20 @@ class ToolRegistry:
             dict: "object",
         }
         return type_mapping.get(python_type, "string")  # Default to string if unknown
-    
-    def get_agents(self):
+
+    def get_agents(self) -> List[Agent]:
         """Returns a list of Agent instances for all registered agents."""
         return [Agent(**data) for data in self.agents.values()]
+    
+    def get_tool(self, name) -> Optional[Tuple[List[Dict[str, Any]], Dict[str, Callable]]]:
+        """Returns the tool schema and function in fallback format."""
+        if name not in self.tool_schemas or name not in self.tool_functions:
+            warnings.warn(f"Tool '{name}' not found in registry.")
+            return None
+
+        tool_schema = self.tool_schemas[name]
+        tool_function = self.tool_functions[name]
+        return [tool_schema], {name: tool_function}
     
     def clear(self):
         """Clears all registered tools and agents."""
@@ -120,3 +131,5 @@ tool = tool_registry.tool
 get_tool_schemas = tool_registry.get_tool_schemas
 get_tool_function = tool_registry.get_tool_function
 get_agents = tool_registry.get_agents
+get_tool = tool_registry.get_tool
+clear = tool_registry.clear
