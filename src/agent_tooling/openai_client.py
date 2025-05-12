@@ -101,14 +101,13 @@ class OpenAITooling:
                 model=model,
                 messages=messages,
                 tools=tools,
-                tool_choice="auto"
+                tool_choice="required"  # force the fallback tool to be selected
             )
 
             response = completion.choices[0].message
             tool_calls = response.tool_calls
 
-        # add the fallback tool to the available functions
-        if fallback_tool:
+            # add the fallback tool to the available functions
             tool_schema, function = get_tool(fallback_tool)
             available_functions.update(function)
 
