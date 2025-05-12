@@ -55,10 +55,10 @@ class OpenAITooling:
     def call_tools(
         self,
         messages: List[dict],
-        api_key: Optional[str],
-        model: Optional[str],
-        tool_choice: str,
-        tags: Optional[List[str]],
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        tool_choice: str = "auto",
+        tags: Optional[List[str]] = None,
         fallback_tool: Optional[str] = None
     ) -> Generator:
         """
@@ -75,8 +75,17 @@ class OpenAITooling:
         # validate that the fallback tool is a valid function
         if fallback_tool and get_tool(fallback_tool) is None:
             raise ValueError(f"Fallback tool '{fallback_tool}' not found.")
+        if not api_key and not self.api_key:
+            raise ValueError("API key is required.")
+        
         if not api_key:
             api_key = self.api_key
+
+        if not model and not self.model:
+            raise ValueError("Model is required.")
+        
+        if not model:
+            model = self.model
 
         client = OpenAI(api_key=api_key)
         tools, available_functions = openai_format_tools(tags=tags)
