@@ -94,6 +94,42 @@ If the tools matching the provided tags cannot handle the message, the fallback 
 
 ---
 
+## Example with OllamaTooling
+
+Agent Tooling now supports the Ollama client! Use your local Ollama models in the same way as with the OpenAI API, including tool routing and fallback logic.
+
+```python
+from agent_tooling import tool, OllamaTooling
+
+@tool(tags=["agent", "triage", "ollama", "openai"])
+def summarize(text: str) -> str:
+    """Short summary of provided text."""
+    return text[:50] + "..." if len(text) > 50 else text
+
+ollama_tooling_client = OllamaTooling(
+    model="granite3.3:2b"  # Or another Ollama-hosted model
+)
+
+messages = [
+    {"role": "user", "content": "Summarize this news article: <article text>"},
+]
+
+result_stream = ollama_tooling_client.call_tools(
+    messages=messages,
+    model="granite3.3:2b",
+    tool_choice="auto",
+    tags=["agent", "triage", "ollama"],
+    fallback_tool="web_search",
+)
+
+for response in result_stream:
+    print(response["content"])
+```
+
+This enables full function/tool chaining with models served by your local Ollama instance, and automatic fallback to other tools (like a web search) if required.
+
+---
+
 ## API Reference
 
 ### `@tool(tags=None)`
@@ -137,6 +173,22 @@ OpenAITooling(api_key=None, model=None, tool_choice="auto")
 #### Methods:
 
 * `call_tools(messages, api_key=None, model=None, tool_choice="auto", tags=None, fallback_tool=None)`
+
+  * Yields generator of response messages
+  * If no tool matched, attempts a fallback if provided
+  * Validates arguments and handles conditional message passing
+
+---
+
+### `OllamaTooling`
+
+```python
+OllamaTooling(model=None, tool_choice="auto")
+```
+
+#### Methods:
+
+* `call_tools(messages, model=None, tool_choice="auto", tags=None, fallback_tool=None)`
 
   * Yields generator of response messages
   * If no tool matched, attempts a fallback if provided
