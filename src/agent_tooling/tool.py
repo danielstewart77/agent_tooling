@@ -11,6 +11,7 @@ class Agent(BaseModel):
     file_name: str = Field(..., description="the name of the file without the full path")
     file_path: str = Field(..., description="the name of the file including the full path")
     code: str = Field(..., description="the all of the code in the file for the agent")
+    tags: List[str] = Field(default_factory=list, description="tags associated with the agent")
 
     class ConfigDict:
         extra = "forbid"
@@ -22,6 +23,7 @@ class ToolRegistry:
         self.tool_schemas = {}
         self.tool_functions = {}
         self.agents = {}
+        self.tag_registry = set()
 
     def tool(self, tags=None):
         """Decorator factory to register a function as a tool with optional tags."""
@@ -29,6 +31,7 @@ class ToolRegistry:
             func = tags
             tags = None
             return self.tool(tags)(func)
+        
         def decorator(func):
             print(f"[REGISTER] from {__name__}: {func.__name__}")
             sig = inspect.signature(func)
@@ -40,6 +43,9 @@ class ToolRegistry:
 
             return_type = self._get_json_type(sig.return_annotation) if sig.return_annotation != inspect.Signature.empty else "null"
 
+            current_tags = tags or []
+            self.tag_registry.update(current_tags)
+
             self.tool_schemas[func.__name__] = {
                 "name": func.__name__,
                 "description": func.__doc__ or "No description provided.",
@@ -49,7 +55,7 @@ class ToolRegistry:
                     "required": list(param_details.keys())
                 },
                 "return_type": return_type,
-                "tags": tags or []
+                "tags": current_tags
             }
 
             frame = inspect.currentframe().f_back
@@ -66,6 +72,7 @@ class ToolRegistry:
                 "file_name": file_name,
                 "file_path": file_path,
                 "code": code,
+                "tags": tags or []
             }
 
             # Store the actual function reference
@@ -78,6 +85,10 @@ class ToolRegistry:
             return wrapper
         
         return decorator
+    
+    def get_tags(self) -> List[str]:
+        """Returns a sorted list of all unique tags used in the tool registry."""
+        return sorted(self.tag_registry)
 
     def get_tool_schemas(self, tags=None) -> List[Dict[str, Any]]:
         """Returns metadata schemas for registered tools, optionally filtered by tags."""
@@ -133,3 +144,4 @@ get_tool_function = tool_registry.get_tool_function
 get_agents = tool_registry.get_agents
 get_tool = tool_registry.get_tool
 clear = tool_registry.clear
+get_tags = tool_registry.get_tags

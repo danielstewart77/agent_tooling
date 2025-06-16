@@ -25,6 +25,8 @@ pip install agent_tooling
 * ✅ Smart message passing based on function signature
 * ✅ Stream results or return all at once
 * ✅ Expose registered agents and their code metadata
+* ✅ Register tools with structured metadata and tags
+* ✅ List all unique tags with `get_tags()`
 
 ---
 
@@ -42,6 +44,19 @@ schemas = get_tool_schemas()
 func_dict = get_tool_function("add")
 print(func_dict("a": 5, "b": 3))  # 8
 ```
+
+---
+
+## Tag Discovery
+
+You can list all unique tags associated with registered tools:
+
+```python
+from agent_tooling import get_tags
+
+tags = get_tags()
+print(tags)  # ['finance', 'math', 'weather']
+
 
 ---
 
@@ -139,6 +154,10 @@ Registers a function with introspected JSON schema + optional tags.
 ### `get_tool_schemas(tags=None) -> List[Dict[str, Any]]`
 
 Returns OpenAI-compatible tool metadata (filtered by tag if provided).
+
+### `get_tags() -> List[str]`
+
+Returns a sorted list of all unique tags used in registered tools.
 
 ### `get_tool_function(name) -> Optional[Callable]`
 
